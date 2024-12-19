@@ -1,8 +1,16 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { format } from "date-fns";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
-export function TaskCard({ task }) {
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./DropdownMenu";
+
+const TaskCard = ({ task, onEditTask, onDeleteTask }) => {
   const {
     attributes,
     listeners,
@@ -31,14 +39,47 @@ export function TaskCard({ task }) {
         !isDragging && "cursor-grab hover:shadow-md"
       } ${isMissed && "border-red-500 bg-red-50 dark:bg-red-900/10"}`}
     >
+      <div className="mb-2 flex items-start justify-end">
+        <div className="opacity-0 transition-opacity group-hover:opacity-100">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="rounded p-1 hover:bg-accent">
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onPointerDown={(e) => e.preventDefault()}
+                onSelect={() => {
+                  onEditTask(task);
+                }}
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                Редагувати
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onPointerDown={(e) => e.preventDefault()}
+                onSelect={() => onDeleteTask(task.id)}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Видалити
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
       <div className="mb-2 flex items-start justify-between">
         <h4 className="font-medium">{task.description}</h4>
       </div>
       {task.dueDate && (
         <div className="text-xs text-muted-foreground">
-          Due: {format(new Date(task.dueDate), "PPP")}
+          До: {format(new Date(task.dueDate), "PPP")}
         </div>
       )}
     </div>
   );
-}
+};
+
+export default TaskCard;
