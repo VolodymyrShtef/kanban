@@ -3,11 +3,20 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { TaskCard } from "./TaskCard";
+
+import TaskCard from "./TaskCard";
 import Skeleton from "./Skeleton";
+
 import { statusConfig } from "../configs/core";
 
-export function Column({ status, tasks, isLoading }) {
+const Column = ({
+  status,
+  tasks,
+  isLoading,
+  onAddTask,
+  onEditTask,
+  onDeleteTask,
+}) => {
   const { setNodeRef } = useDroppable({
     id: status,
   });
@@ -31,28 +40,44 @@ export function Column({ status, tasks, isLoading }) {
 
   return (
     <div
-      className={`flex h-full w-80 flex-col rounded-lg border bg-card p-4 ${statusConfig[status].color}`}
+      className={`flex h-full w-80 flex-col rounded-xl border bg-card ${statusConfig[status].color}`}
     >
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-semibold">
-          {statusConfig[status].title}
-          {filteredTasks.length > 0 && (
-            <span className="ml-1 rounded-full bg-muted px-2 py-1 text-xs">
-              {filteredTasks.length}
-            </span>
-          )}
-        </h2>
+      <div className={"p-4"}>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-semibold">
+            {statusConfig[status].title}
+            {filteredTasks.length > 0 && (
+              <span className="ml-1 rounded-full bg-muted px-2 py-1 text-xs">
+                {filteredTasks.length}
+              </span>
+            )}
+          </h2>
+        </div>
+        <div ref={setNodeRef} className="flex-1 space-y-3">
+          <SortableContext
+            items={filteredTasks.map((t) => t.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {filteredTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onEditTask={onEditTask}
+                onDeleteTask={onDeleteTask}
+              />
+            ))}
+          </SortableContext>
+        </div>
       </div>
-      <div ref={setNodeRef} className="flex-1 space-y-3">
-        <SortableContext
-          items={filteredTasks.map((t) => t.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          {filteredTasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
-          ))}
-        </SortableContext>
+      <div
+        role="button"
+        className={`h-24 flex-1 mt-3 border-t bg-card p-4 text-center font-bold ${statusConfig[status].color}`}
+        onClick={() => onAddTask(status)}
+      >
+        Нове завдання
       </div>
     </div>
   );
-}
+};
+
+export default Column;

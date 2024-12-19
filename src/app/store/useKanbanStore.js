@@ -8,7 +8,7 @@ const useKanbanStore = () => {
     },
     {
       id: "2",
-      description: "Створити пересикач теми",
+      description: "Створити перемикач теми",
       status: "TODO",
       createdAt: new Date(),
     },
@@ -33,9 +33,14 @@ const useKanbanStore = () => {
     return storedTasks || initialTasks;
   };
 
+  const saveTasks = (tasks) => {
+    localStorage.setItem("kanbanTasks", JSON.stringify(tasks));
+  };
+
   return {
     initialTasks,
     getTasks,
+    saveTasks,
   };
 };
 
