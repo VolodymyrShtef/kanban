@@ -9,25 +9,37 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 
+import { Search } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
 import Column from "../components/Column";
 import TaskForm from "../components/TaskForm";
+import Input from "../components/Input";
 
 import useKanbanStore from "../store/useKanbanStore";
-import { delay } from "../../utils/utils";
+import { ThemeProvider } from "../providers/ThemeProvider";
+import { delay } from "../utils/utils";
+
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 
 const KanbanBoard = () => {
+  const searchParams = useSearchParams();
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingTaskStatus, setProcessingTaskStatus] = useState("");
   const [taskToEdit, setTaskToEdit] = useState();
+  const [searchValue, setSearchValue] = useState(
+    searchParams?.get("search") || ""
+  );
 
   const { getTasks, saveTasks } = useKanbanStore();
 
   const mouseSensor = useSensor(MouseSensor);
   const touchSensor = useSensor(TouchSensor);
   const sensors = useSensors(mouseSensor, touchSensor);
+
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const loadData = async () => {
@@ -38,6 +50,18 @@ const KanbanBoard = () => {
     };
     loadData();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+
+    if (searchValue) {
+      params.set("search", searchValue);
+    } else {
+      params.delete("search");
+    }
+
+    router.push(pathname + "?" + params.toString());
+  }, [searchValue]);
 
   const dragEndHandler = (event) => {
     const { active, over } = event;
@@ -88,14 +112,32 @@ const KanbanBoard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto max-w-7xl p-8">
+    <ThemeProvider>
+      <div className="min-h-screen bg-background text-foreground mx-auto max-w-4xl p-2">
+        <div className="mb-8 flex flex-col gap-4 items-center justify-between">
+          <h1 className="text-3xl font-bold mb-5">ЗАВДАННЯ</h1>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 sm:flex-initial">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Знайти..."
+                value={searchValue}
+                onChange={(e) => {
+                  setSearchValue(e.target.value);
+                }}
+                className="pl-8"
+              />
+            </div>
+          </div>
+        </div>
+
         <DndContext sensors={sensors} onDragEnd={dragEndHandler}>
           <div className="flex gap-6 overflow-x-auto pb-4">
             <Column
               status="TODO"
               tasks={tasks.filter((task) => task.status === "TODO")}
               isLoading={isLoading}
+              searchValue={searchValue}
               onAddTask={setProcessingTaskStatus}
               onEditTask={editTaskHandler}
               onDeleteTask={deleteTaskHandler}
@@ -104,6 +146,7 @@ const KanbanBoard = () => {
               status="IN_PROGRESS"
               tasks={tasks.filter((task) => task.status === "IN_PROGRESS")}
               isLoading={isLoading}
+              searchValue={searchValue}
               onAddTask={setProcessingTaskStatus}
               onEditTask={editTaskHandler}
               onDeleteTask={deleteTaskHandler}
@@ -112,6 +155,7 @@ const KanbanBoard = () => {
               status="DONE"
               tasks={tasks.filter((task) => task.status === "DONE")}
               isLoading={isLoading}
+              searchValue={searchValue}
               onAddTask={setProcessingTaskStatus}
               onEditTask={editTaskHandler}
               onDeleteTask={deleteTaskHandler}
@@ -125,7 +169,7 @@ const KanbanBoard = () => {
           initialData={taskToEdit}
         />
       </div>
-    </div>
+    </ThemeProvider>
   );
 };
 

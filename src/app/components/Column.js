@@ -13,6 +13,7 @@ const Column = ({
   status,
   tasks,
   isLoading,
+  searchValue,
   onAddTask,
   onEditTask,
   onDeleteTask,
@@ -21,7 +22,11 @@ const Column = ({
     id: status,
   });
 
-  const filteredTasks = tasks;
+  const filteredTasks = searchValue
+    ? tasks.filter((task) =>
+        task.description.toLowerCase().includes(searchValue.toLowerCase())
+      )
+    : tasks;
 
   if (isLoading) {
     return (
@@ -40,7 +45,7 @@ const Column = ({
 
   return (
     <div
-      className={`flex h-full w-80 flex-col rounded-xl border bg-card ${statusConfig[status].color}`}
+      className={`flex h-full w-80 flex-col rounded-xl overflow-hidden border bg-card ${statusConfig[status].color}`}
     >
       <div className={"p-4"}>
         <div className="mb-4 flex items-center justify-between">
@@ -62,6 +67,7 @@ const Column = ({
               <TaskCard
                 key={task.id}
                 task={task}
+                searchValue={searchValue}
                 onEditTask={onEditTask}
                 onDeleteTask={onDeleteTask}
               />
@@ -71,7 +77,7 @@ const Column = ({
       </div>
       <div
         role="button"
-        className={`h-24 flex-1 mt-3 border-t bg-card p-4 text-center font-bold ${statusConfig[status].color}`}
+        className={`flex-1 mt-3 border-t bg-card px-4 py-2 text-center font-bold bg-muted ${statusConfig[status].color}`}
         onClick={() => onAddTask(status)}
       >
         Нове завдання
