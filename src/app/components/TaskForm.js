@@ -77,8 +77,20 @@ const TaskForm = ({ open, onOverlayClose, onFormSubmit, initialData }) => {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={closeOverlay}>Відмінити</Button>
-            <Button type="submit">
+            <Button
+              onClick={closeOverlay}
+              className={
+                "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+              }
+            >
+              Відмінити
+            </Button>
+            <Button
+              type="submit"
+              className={
+                "bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
+              }
+            >
               {initialData?.description ? "Оновити" : "Створити"}
             </Button>
           </DialogFooter>
