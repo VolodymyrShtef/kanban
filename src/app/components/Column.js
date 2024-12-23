@@ -10,7 +10,7 @@ import Skeleton from "./Skeleton";
 import { statusConfig } from "../configs/core";
 
 const Column = ({
-  status,
+  id,
   tasks,
   isLoading,
   searchValue,
@@ -19,7 +19,7 @@ const Column = ({
   onDeleteTask,
 }) => {
   const { setNodeRef } = useDroppable({
-    id: status,
+    id,
   });
 
   const filteredTasks = searchValue
@@ -45,12 +45,12 @@ const Column = ({
 
   return (
     <div
-      className={`flex h-full w-80 flex-col rounded-xl overflow-hidden border bg-card ${statusConfig[status].color}`}
+      className={`flex h-full w-80 flex-col rounded-xl overflow-hidden border bg-card ${statusConfig[id].color}`}
     >
       <div className={"p-4"}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold">
-            {statusConfig[status].title}
+            {statusConfig[id].title}
             {filteredTasks.length > 0 && (
               <span className="ml-1 rounded-full bg-muted px-2 py-1 text-xs">
                 {filteredTasks.length}
@@ -58,11 +58,12 @@ const Column = ({
             )}
           </h2>
         </div>
-        <div ref={setNodeRef} className="flex-1 space-y-3">
-          <SortableContext
-            items={filteredTasks.map((t) => t.id)}
-            strategy={verticalListSortingStrategy}
-          >
+        <SortableContext
+          id={id}
+          items={filteredTasks}
+          strategy={verticalListSortingStrategy}
+        >
+          <div ref={setNodeRef} className="flex-1 space-y-3">
             {filteredTasks.map((task) => (
               <TaskCard
                 key={task.id}
@@ -72,13 +73,13 @@ const Column = ({
                 onDeleteTask={onDeleteTask}
               />
             ))}
-          </SortableContext>
-        </div>
+          </div>
+        </SortableContext>
       </div>
       <div
         role="button"
-        className={`flex-1 mt-3 border-t bg-card px-4 py-2 text-center font-bold bg-muted ${statusConfig[status].color}`}
-        onClick={() => onAddTask(status)}
+        className={`flex-1 mt-3 border-t bg-card px-4 py-2 text-center font-bold bg-muted ${statusConfig[id].color}`}
+        onClick={() => onAddTask(id)}
       >
         Нове завдання
       </div>

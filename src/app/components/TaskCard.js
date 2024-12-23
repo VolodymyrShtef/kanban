@@ -1,4 +1,5 @@
 import { useSortable } from "@dnd-kit/sortable";
+
 import { CSS } from "@dnd-kit/utilities";
 import { format } from "date-fns";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -23,6 +24,7 @@ const TaskCard = ({ task, searchValue, onEditTask, onDeleteTask }) => {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0 : 1,
   };
 
   const isMissed = task.dueDate && new Date(task.dueDate) < new Date();
@@ -52,10 +54,8 @@ const TaskCard = ({ task, searchValue, onEditTask, onDeleteTask }) => {
       {...attributes}
       {...listeners}
       className={`group relative rounded-lg border bg-card p-4 shadow-sm transition-all ${
-        isDragging && "cursor-grabbing shadow-lg"
-      } ${isDragging && "cursor-grabbing shadow-lg"} ${
-        !isDragging && "cursor-grab hover:shadow-md"
-      } ${isMissed && "border-red-500 bg-red-50 dark:bg-red-900/10"}`}
+        isMissed && "border-red-500 bg-red-50 dark:bg-red-900/10"
+      }`}
     >
       <div className="mb-2 flex items-start justify-between">
         <h5 className="font-medium">
