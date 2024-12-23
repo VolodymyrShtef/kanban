@@ -30,7 +30,7 @@ const useKanbanStore = () => {
   const getTasks = () => {
     const storedTasks = JSON.parse(localStorage.getItem("kanbanTasks"));
 
-    return storedTasks || initialTasks;
+    return storedTasks?.length ? storedTasks : initialTasks;
   };
 
   const saveTasks = (tasks) => {

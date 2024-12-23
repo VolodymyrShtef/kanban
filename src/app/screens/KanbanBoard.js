@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
+
+import { v4 as uuidv4 } from "uuid";
 import {
   DndContext,
   MouseSensor,
@@ -10,17 +13,16 @@ import {
 } from "@dnd-kit/core";
 
 import { Search } from "lucide-react";
-import { v4 as uuidv4 } from "uuid";
 
 import Column from "../components/Column";
 import TaskForm from "../components/TaskForm";
 import Input from "../components/Input";
+import Toaster from "../components/Toaster";
+import Button from "../components/Button";
 
 import useKanbanStore from "../store/useKanbanStore";
 import { ThemeProvider } from "../providers/ThemeProvider";
 import { delay } from "../utils/utils";
-
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
 
 const KanbanBoard = () => {
   const searchParams = useSearchParams();
@@ -31,25 +33,53 @@ const KanbanBoard = () => {
   const [searchValue, setSearchValue] = useState(
     searchParams?.get("search") || ""
   );
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastConfig, setToastConfig] = useState({});
 
-  const { getTasks, saveTasks } = useKanbanStore();
+  const timerRef = useRef();
+
+  const router = useRouter();
+  const pathname = usePathname();
 
   const mouseSensor = useSensor(MouseSensor);
   const touchSensor = useSensor(TouchSensor);
   const sensors = useSensors(mouseSensor, touchSensor);
 
-  const router = useRouter();
-  const pathname = usePathname();
+  const { initialTasks, getTasks, saveTasks } = useKanbanStore();
+
+  const loadData = async (tasks) => {
+    await delay(3000);
+    setTasks(tasks);
+    saveTasks(tasks);
+    setIsLoading(false);
+  };
 
   useEffect(() => {
-    const loadData = async () => {
-      await delay(3000);
-
-      setTasks(getTasks());
-      setIsLoading(false);
-    };
-    loadData();
+    loadData(getTasks());
   }, []);
+
+  useEffect(() => {
+    const haveUnfinished = tasks.some((task) => task.status !== "DONE");
+
+    if (tasks.length && !haveUnfinished) {
+      toastOpener();
+      setToastConfig({
+        title: "Congrats! 🎉",
+        description: "You have completed all tasks!",
+        action: (
+          <Button
+            className="inline-flex h-[25px] items-center justify-center rounded bg-green2 px-2.5 text-xs font-medium leading-[25px] text-green11 shadow-[inset_0_0_0_1px] shadow-green7 hover:shadow-[inset_0_0_0_1px] hover:shadow-green8 focus:shadow-[0_0_0_2px] focus:shadow-green8 mr-3"
+            onClick={() => {
+              setIsLoading(true);
+              loadData(initialTasks);
+            }}
+          >
+            Try again
+          </Button>
+        ),
+      });
+    }
+  }, [tasks]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams);
@@ -99,6 +129,12 @@ const KanbanBoard = () => {
           },
         ];
 
+    toastOpener();
+    setToastConfig({
+      title: "Все ок",
+      description: "Завдання успішно збережено",
+    });
+
     editTaskHandler();
     setTasks(newTasks);
     saveTasks(newTasks);
@@ -107,8 +143,22 @@ const KanbanBoard = () => {
   const deleteTaskHandler = (id) => {
     const newTasks = tasks.filter((task) => task.id !== id);
 
+    toastOpener();
+    setToastConfig({
+      title: "Все ок",
+      description: "Завдання успішно видалене",
+    });
+
     setTasks(newTasks);
     saveTasks(newTasks);
+  };
+
+  const toastOpener = () => {
+    setToastOpen(false);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setToastOpen(true);
+    }, 100);
   };
 
   return (
@@ -167,6 +217,11 @@ const KanbanBoard = () => {
           onOverlayClose={editTaskHandler}
           onFormSubmit={submitTaskHandler}
           initialData={taskToEdit}
+        />
+        <Toaster
+          open={toastOpen}
+          onOpenChange={setToastOpen}
+          toastConfig={toastConfig}
         />
       </div>
     </ThemeProvider>
