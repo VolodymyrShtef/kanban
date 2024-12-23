@@ -5,12 +5,16 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 
 import { v4 as uuidv4 } from "uuid";
 import {
-  DndContext,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
   useSensors,
+  useSensor,
+  PointerSensor,
+  KeyboardSensor,
+  DndContext,
+  closestCorners,
+  DragOverlay,
+  defaultDropAnimation,
 } from "@dnd-kit/core";
+import { sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable";
 
 import { Search } from "lucide-react";
 
@@ -22,7 +26,13 @@ import Button from "../components/Button";
 
 import useKanbanStore from "../store/useKanbanStore";
 import { ThemeProvider } from "../providers/ThemeProvider";
-import { delay } from "../utils/utils";
+import {
+  delay,
+  findBoardSectionContainer,
+  getTaskById,
+  initializeBoard,
+} from "../utils/utils";
+import TaskCard from "../components/TaskCard";
 
 const KanbanBoard = () => {
   const searchParams = useSearchParams();
@@ -36,16 +46,26 @@ const KanbanBoard = () => {
   const [toastOpen, setToastOpen] = useState(false);
   const [toastConfig, setToastConfig] = useState({});
 
+  const [boardSections, setBoardSections] = useState({});
+  const [activeId, setActiveId] = useState(null);
+
   const timerRef = useRef();
 
   const router = useRouter();
   const pathname = usePathname();
 
-  const mouseSensor = useSensor(MouseSensor);
-  const touchSensor = useSensor(TouchSensor);
-  const sensors = useSensors(mouseSensor, touchSensor);
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const { initialTasks, getTasks, saveTasks } = useKanbanStore();
+
+  const dropAnimation = {
+    ...defaultDropAnimation,
+  };
 
   const loadData = async (tasks) => {
     await delay(3000);
@@ -59,6 +79,8 @@ const KanbanBoard = () => {
   }, []);
 
   useEffect(() => {
+    setBoardSections(initializeBoard(tasks));
+
     const haveUnfinished = tasks.some((task) => task.status !== "DONE");
 
     if (tasks.length && !haveUnfinished) {
@@ -92,18 +114,6 @@ const KanbanBoard = () => {
 
     router.push(pathname + "?" + params.toString());
   }, [searchValue]);
-
-  const dragEndHandler = (event) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const newTasks = tasks.map((task) =>
-        task.id === active.id ? { ...task, status: over.id } : task
-      );
-
-      setTasks(newTasks);
-    }
-  };
 
   const editTaskHandler = (task) => {
     setTaskToEdit(task ? task : {});
@@ -161,6 +171,92 @@ const KanbanBoard = () => {
     }, 100);
   };
 
+  const handleDragStart = ({ active }) => {
+    setActiveId(active.id);
+  };
+
+  const handleDragOver = ({ active, over }) => {
+    const activeContainer = findBoardSectionContainer(boardSections, active.id);
+    const overContainer = findBoardSectionContainer(boardSections, over?.id);
+
+    if (
+      !activeContainer ||
+      !overContainer ||
+      activeContainer === overContainer
+    ) {
+      return;
+    }
+
+    setBoardSections((boardSections) => {
+      const activeItems = boardSections[activeContainer];
+      const overItems = boardSections[overContainer];
+
+      const activeIndex = activeItems.findIndex(
+        (item) => item.id === active.id
+      );
+      const overIndex = overItems.findIndex((item) => item.id !== over?.id);
+
+      return {
+        ...boardSections,
+        [activeContainer]: [
+          ...boardSections[activeContainer].filter(
+            (item) => item.id !== active.id
+          ),
+        ],
+        [overContainer]: [
+          ...boardSections[overContainer].slice(0, overIndex),
+          boardSections[activeContainer][activeIndex],
+          ...boardSections[overContainer].slice(
+            overIndex,
+            boardSections[overContainer].length
+          ),
+        ],
+      };
+    });
+  };
+
+  const handleDragEnd = ({ active, over }) => {
+    const activeContainer = findBoardSectionContainer(boardSections, active.id);
+    const overContainer = findBoardSectionContainer(boardSections, over?.id);
+
+    if (
+      !activeContainer ||
+      !overContainer ||
+      activeContainer !== overContainer
+    ) {
+      return;
+    }
+
+    const activeIndex = boardSections[activeContainer].findIndex(
+      (task) => task.id === active.id
+    );
+    const overIndex = boardSections[overContainer].findIndex(
+      (task) => task.id === over?.id
+    );
+
+    if (activeIndex !== overIndex) {
+      setBoardSections((boardSection) => ({
+        ...boardSection,
+        [overContainer]: arrayMove(
+          boardSection[overContainer],
+          activeIndex,
+          overIndex
+        ),
+      }));
+    }
+
+    const newTasks = tasks.map((task) =>
+      task.id === activeId ? { ...task, status: overContainer } : task
+    );
+
+    setTasks(newTasks);
+    saveTasks(newTasks);
+
+    setActiveId(null);
+  };
+
+  const task = activeId ? getTaskById(tasks, activeId) : null;
+
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-background text-foreground mx-auto max-w-4xl p-2">
@@ -181,36 +277,30 @@ const KanbanBoard = () => {
           </div>
         </div>
 
-        <DndContext sensors={sensors} onDragEnd={dragEndHandler}>
-          <div className="flex gap-6 overflow-x-auto pb-4">
-            <Column
-              status="TODO"
-              tasks={tasks.filter((task) => task.status === "TODO")}
-              isLoading={isLoading}
-              searchValue={searchValue}
-              onAddTask={setProcessingTaskStatus}
-              onEditTask={editTaskHandler}
-              onDeleteTask={deleteTaskHandler}
-            />
-            <Column
-              status="IN_PROGRESS"
-              tasks={tasks.filter((task) => task.status === "IN_PROGRESS")}
-              isLoading={isLoading}
-              searchValue={searchValue}
-              onAddTask={setProcessingTaskStatus}
-              onEditTask={editTaskHandler}
-              onDeleteTask={deleteTaskHandler}
-            />
-            <Column
-              status="DONE"
-              tasks={tasks.filter((task) => task.status === "DONE")}
-              isLoading={isLoading}
-              searchValue={searchValue}
-              onAddTask={setProcessingTaskStatus}
-              onEditTask={editTaskHandler}
-              onDeleteTask={deleteTaskHandler}
-            />
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex flex-col sm:flex sm:flex-row sm:flex-wrap md:flex-nowrap gap-6 overflow-x-auto pb-4">
+            {Object.keys(boardSections).map((boardSectionKey) => (
+              <Column
+                key={boardSectionKey}
+                id={boardSectionKey}
+                tasks={boardSections[boardSectionKey]}
+                isLoading={isLoading}
+                searchValue={searchValue}
+                onAddTask={setProcessingTaskStatus}
+                onEditTask={editTaskHandler}
+                onDeleteTask={deleteTaskHandler}
+              />
+            ))}
           </div>
+          <DragOverlay dropAnimation={dropAnimation}>
+            {task ? <TaskCard task={task} /> : null}
+          </DragOverlay>
         </DndContext>
         <TaskForm
           open={processingTaskStatus}
