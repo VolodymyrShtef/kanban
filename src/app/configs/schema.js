@@ -2,7 +2,8 @@ import { z } from "zod";
 
 export const taskSchema = z.object({
   id: z.string().optional(),
-  description: z.string().min(3, "Опис завдання має містити мін 3 символи"),
+  title: z.string().min(3, "Опис завдання має містити мін 3 символи"),
+  description: z.string().optional(),
   status: z.enum(["TODO", "IN_PROGRESS", "DONE"]).optional(),
   dueDate: z
     .string()

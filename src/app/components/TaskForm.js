@@ -29,10 +29,11 @@ const TaskForm = ({ open, onOverlayClose, onFormSubmit, initialData }) => {
 
   useEffect(() => {
     reset({
-      description: initialData?.description ? initialData.description : "",
+      title: initialData?.title || null,
+      description: initialData?.description || null,
       dueDate: initialData?.dueDate
         ? format(new Date(initialData?.dueDate), "yyyy-MM-dd")
-        : undefined,
+        : null,
     });
   }, [initialData]);
 
@@ -48,27 +49,33 @@ const TaskForm = ({ open, onOverlayClose, onFormSubmit, initialData }) => {
   };
 
   return (
-    <Dialog open={Boolean(open)} onOpenChange={closeOverlay}>
+    <Dialog open={open} onOpenChange={closeOverlay}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {initialData?.description ? "Редагувати завдання" : "Нове завдання"}
+            {initialData?.title ? "Редагувати завдання" : "Нове завдання"}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
           <div className="space-y-2">
+            <Label htmlFor="title">Назва</Label>
+            <Input
+              id="title"
+              {...register("title")}
+              placeholder="Введи назву завдання"
+            />
+            {errors.title && (
+              <p className="text-sm text-destructive">{errors.title.message}</p>
+            )}
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="description">Опис</Label>
             <Input
               id="description"
               {...register("description")}
-              placeholder="Введи опис завдання"
+              placeholder="Введи опис"
             />
-            {errors.description && (
-              <p className="text-sm text-destructive">
-                {errors.description.message}
-              </p>
-            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="dueDate">Закінчити до</Label>
@@ -91,7 +98,7 @@ const TaskForm = ({ open, onOverlayClose, onFormSubmit, initialData }) => {
                 "bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
               }
             >
-              {initialData?.description ? "Оновити" : "Створити"}
+              {initialData?.title ? "Оновити" : "Створити"}
             </Button>
           </DialogFooter>
         </form>
