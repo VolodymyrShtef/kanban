@@ -39,7 +39,7 @@ const KanbanBoard = () => {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingTaskStatus, setProcessingTaskStatus] = useState("");
-  const [taskToEdit, setTaskToEdit] = useState();
+  const [taskToEdit, setTaskToEdit] = useState(null);
   const [searchValue, setSearchValue] = useState(
     searchParams?.get("search") || ""
   );
@@ -116,12 +116,12 @@ const KanbanBoard = () => {
   }, [searchValue]);
 
   const editTaskHandler = (task) => {
-    setTaskToEdit(task ? task : {});
+    setTaskToEdit(task ? task : null);
     setProcessingTaskStatus(task ? task.status : "");
   };
 
   const submitTaskHandler = (taskData) => {
-    let newTasks = taskToEdit?.description
+    let newTasks = taskToEdit?.title
       ? tasks.map((task) =>
           task.id === taskToEdit.id
             ? {
@@ -303,7 +303,7 @@ const KanbanBoard = () => {
           </DragOverlay>
         </DndContext>
         <TaskForm
-          open={processingTaskStatus}
+          open={Boolean(processingTaskStatus)}
           onOverlayClose={editTaskHandler}
           onFormSubmit={submitTaskHandler}
           initialData={taskToEdit}

@@ -58,11 +58,11 @@ const TaskCard = ({ task, searchValue, onEditTask, onDeleteTask }) => {
       }`}
     >
       <div className="mb-2 flex items-start justify-between">
-        <h5 className="font-medium">
+        <p className="font-semibold">
           {searchValue
-            ? highlightDescription(task.description, searchValue)
-            : task.description}
-        </h5>
+            ? highlightDescription(task.title, searchValue)
+            : task.title}
+        </p>
         <div className="flex items-start justify-end">
           <div className="opacity-0 transition-opacity group-hover:opacity-100">
             <DropdownMenu>
@@ -94,6 +94,7 @@ const TaskCard = ({ task, searchValue, onEditTask, onDeleteTask }) => {
           </div>
         </div>
       </div>
+      {task.description && <p className="mb-2">{task.description}</p>}
       {task.dueDate && (
         <div className="text-xs text-muted-foreground">
           До: {format(new Date(task.dueDate), "PPP")}

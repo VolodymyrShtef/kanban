@@ -24,7 +24,7 @@ const Column = ({
 
   const filteredTasks = searchValue
     ? tasks.filter((task) =>
-        task.description.toLowerCase().includes(searchValue.toLowerCase())
+        task.title.toLowerCase().includes(searchValue.toLowerCase())
       )
     : tasks;
 

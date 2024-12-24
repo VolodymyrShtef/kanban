@@ -2,25 +2,28 @@ const useKanbanStore = () => {
   const initialTasks = [
     {
       id: "1",
-      description: "Додати Tailwind CSS, SnadcnUI, dndkit, zod",
+      title: "Додати Tailwind CSS, SnadcnUI, dndkit, zod",
       status: "TODO",
       createdAt: new Date(),
     },
     {
       id: "2",
-      description: "Створити перемикач теми",
+      title: "Створити перемикач теми",
+      description:
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean lobortis.",
       status: "TODO",
       createdAt: new Date(),
     },
     {
       id: "3",
-      description: "Додати функціонал DND",
+      title: "Додати функціонал DND",
       status: "TODO",
       createdAt: new Date(),
     },
     {
       id: "4",
-      description: "Ініціалізація Next.js проекту",
+      title: "Ініціалізація Next.js проекту",
+      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
       status: "IN_PROGRESS",
       createdAt: new Date(),
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
