@@ -12,7 +12,7 @@ export const getTaskById = (tasks, id) => {
   return tasks.find((task) => task.id === id);
 };
 
-export const initializeBoard = (tasks) => {
+export const setBoard = (tasks) => {
   const boardSections = {};
 
   Object.keys(statusConfig).forEach((boardSectionKey) => {
