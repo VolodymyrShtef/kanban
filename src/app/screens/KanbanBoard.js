@@ -14,7 +14,7 @@ import {
   DragOverlay,
   defaultDropAnimation,
 } from "@dnd-kit/core";
-import { sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 
 import { Search } from "lucide-react";
 
@@ -26,19 +26,15 @@ import Button from "../components/Button";
 
 import useKanbanStore from "../store/useKanbanStore";
 import { ThemeProvider } from "../providers/ThemeProvider";
-import {
-  delay,
-  findBoardSectionContainer,
-  getTaskById,
-  initializeBoard,
-} from "../utils/utils";
+import { delay, getTaskById, setBoard } from "../utils/utils";
 import TaskCard from "../components/TaskCard";
+import { dragEnd, dragOverHandler } from "../utils/dnd";
 
 const KanbanBoard = () => {
   const searchParams = useSearchParams();
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [processingTaskStatus, setProcessingTaskStatus] = useState("");
+  const [processingTaskStatus, setProcessingTaskStatus] = useState(null);
   const [taskToEdit, setTaskToEdit] = useState(null);
   const [searchValue, setSearchValue] = useState(
     searchParams?.get("search") || ""
@@ -67,25 +63,25 @@ const KanbanBoard = () => {
     ...defaultDropAnimation,
   };
 
+  // Data fetching
   const loadData = async (tasks) => {
     await delay(3000);
-    setTasks(tasks);
-    saveTasks(tasks);
+    tasksSetter(tasks);
     setIsLoading(false);
   };
 
+  // Lifecycle
   useEffect(() => {
     loadData(getTasks());
   }, []);
 
   useEffect(() => {
-    setBoardSections(initializeBoard(tasks));
+    setBoardSections(setBoard(tasks));
 
     const haveUnfinished = tasks.some((task) => task.status !== "DONE");
 
     if (tasks.length && !haveUnfinished) {
-      toastOpener();
-      setToastConfig({
+      toastOpener({
         title: "Congrats! 🎉",
         description: "You have completed all tasks!",
         action: (
@@ -115,9 +111,15 @@ const KanbanBoard = () => {
     router.push(pathname + "?" + params.toString());
   }, [searchValue]);
 
+  // Managing tasks
+  const tasksSetter = (tasks) => {
+    setTasks(tasks);
+    saveTasks(tasks);
+  };
+
   const editTaskHandler = (task) => {
     setTaskToEdit(task ? task : null);
-    setProcessingTaskStatus(task ? task.status : "");
+    setProcessingTaskStatus(task?.status ? task.status : null);
   };
 
   const submitTaskHandler = (taskData) => {
@@ -139,120 +141,58 @@ const KanbanBoard = () => {
           },
         ];
 
-    toastOpener();
-    setToastConfig({
+    toastOpener({
       title: "Все ок",
       description: "Завдання успішно збережено",
     });
 
-    editTaskHandler();
-    setTasks(newTasks);
-    saveTasks(newTasks);
+    taskToEdit?.title && editTaskHandler();
+    tasksSetter(newTasks);
   };
 
   const deleteTaskHandler = (id) => {
     const newTasks = tasks.filter((task) => task.id !== id);
+    tasksSetter(newTasks);
 
-    toastOpener();
-    setToastConfig({
+    toastOpener({
       title: "Все ок",
       description: "Завдання успішно видалене",
     });
-
-    setTasks(newTasks);
-    saveTasks(newTasks);
   };
 
-  const toastOpener = () => {
+  // Toaster
+  const toastOpener = (config) => {
     setToastOpen(false);
     clearTimeout(timerRef.current);
+
     timerRef.current = setTimeout(() => {
       setToastOpen(true);
     }, 100);
+
+    setToastConfig(config);
   };
 
-  const handleDragStart = ({ active }) => {
+  // Drag & Drop
+  const dragStartHandler = ({ active }) => {
     setActiveId(active.id);
   };
 
-  const handleDragOver = ({ active, over }) => {
-    const activeContainer = findBoardSectionContainer(boardSections, active.id);
-    const overContainer = findBoardSectionContainer(boardSections, over?.id);
+  const dragEndHandler = ({ active, over }) => {
+    const overContainer = dragEnd(
+      active,
+      over,
+      boardSections,
+      setBoardSections
+    );
 
-    if (
-      !activeContainer ||
-      !overContainer ||
-      activeContainer === overContainer
-    ) {
-      return;
-    }
-
-    setBoardSections((boardSections) => {
-      const activeItems = boardSections[activeContainer];
-      const overItems = boardSections[overContainer];
-
-      const activeIndex = activeItems.findIndex(
-        (item) => item.id === active.id
+    if (overContainer) {
+      const newTasks = tasks.map((task) =>
+        task.id === activeId ? { ...task, status: overContainer } : task
       );
-      const overIndex = overItems.findIndex((item) => item.id !== over?.id);
 
-      return {
-        ...boardSections,
-        [activeContainer]: [
-          ...boardSections[activeContainer].filter(
-            (item) => item.id !== active.id
-          ),
-        ],
-        [overContainer]: [
-          ...boardSections[overContainer].slice(0, overIndex),
-          boardSections[activeContainer][activeIndex],
-          ...boardSections[overContainer].slice(
-            overIndex,
-            boardSections[overContainer].length
-          ),
-        ],
-      };
-    });
-  };
-
-  const handleDragEnd = ({ active, over }) => {
-    const activeContainer = findBoardSectionContainer(boardSections, active.id);
-    const overContainer = findBoardSectionContainer(boardSections, over?.id);
-
-    if (
-      !activeContainer ||
-      !overContainer ||
-      activeContainer !== overContainer
-    ) {
-      return;
+      tasksSetter(newTasks);
+      setActiveId(null);
     }
-
-    const activeIndex = boardSections[activeContainer].findIndex(
-      (task) => task.id === active.id
-    );
-    const overIndex = boardSections[overContainer].findIndex(
-      (task) => task.id === over?.id
-    );
-
-    if (activeIndex !== overIndex) {
-      setBoardSections((boardSection) => ({
-        ...boardSection,
-        [overContainer]: arrayMove(
-          boardSection[overContainer],
-          activeIndex,
-          overIndex
-        ),
-      }));
-    }
-
-    const newTasks = tasks.map((task) =>
-      task.id === activeId ? { ...task, status: overContainer } : task
-    );
-
-    setTasks(newTasks);
-    saveTasks(newTasks);
-
-    setActiveId(null);
   };
 
   const task = activeId ? getTaskById(tasks, activeId) : null;
@@ -280,11 +220,13 @@ const KanbanBoard = () => {
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
+          onDragStart={dragStartHandler}
+          onDragOver={({ active, over }) => {
+            dragOverHandler(active, over, boardSections, setBoardSections);
+          }}
+          onDragEnd={dragEndHandler}
         >
-          <div className="flex flex-col sm:flex sm:flex-row sm:flex-wrap md:flex-nowrap gap-6 overflow-x-auto pb-4">
+          <div className="flex justify-center flex-col sm:flex sm:flex-row sm:flex-wrap lg:flex-nowrap gap-6 overflow-x-auto pb-4">
             {Object.keys(boardSections).map((boardSectionKey) => (
               <Column
                 key={boardSectionKey}

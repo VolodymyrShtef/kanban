@@ -28,6 +28,10 @@ const TaskForm = ({ open, onOverlayClose, onFormSubmit, initialData }) => {
   });
 
   useEffect(() => {
+    if (!initialData?.title) {
+      reset({});
+    }
+
     reset({
       title: initialData?.title || null,
       description: initialData?.description || null,
@@ -37,19 +41,8 @@ const TaskForm = ({ open, onOverlayClose, onFormSubmit, initialData }) => {
     });
   }, [initialData]);
 
-  // TO-DO: check submit flow
-  const onSubmitForm = (data) => {
-    onFormSubmit(data);
-    closeOverlay();
-  };
-
-  const closeOverlay = () => {
-    reset();
-    onOverlayClose();
-  };
-
   return (
-    <Dialog open={open} onOpenChange={closeOverlay}>
+    <Dialog open={open} onOpenChange={onOverlayClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
@@ -57,7 +50,14 @@ const TaskForm = ({ open, onOverlayClose, onFormSubmit, initialData }) => {
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
+        <form
+          onSubmit={handleSubmit((data) => {
+            reset({});
+            onOverlayClose();
+            onFormSubmit(data);
+          })}
+          className="space-y-4"
+        >
           <div className="space-y-2">
             <Label htmlFor="title">Назва</Label>
             <Input
@@ -85,7 +85,7 @@ const TaskForm = ({ open, onOverlayClose, onFormSubmit, initialData }) => {
           </div>
           <DialogFooter>
             <Button
-              onClick={closeOverlay}
+              onClick={onOverlayClose}
               className={
                 "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
               }

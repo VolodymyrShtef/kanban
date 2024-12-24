@@ -5,10 +5,12 @@ export const metadata = {
   description: "Best progress board ever",
 };
 
-export default function RootLayout({ children }) {
+const RootLayout = ({ children }) => {
   return (
     <html lang="en">
       <body className={`antialiased`}>{children}</body>
     </html>
   );
-}
+};
+
+export default RootLayout;
